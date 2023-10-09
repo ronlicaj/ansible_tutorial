@@ -9,3 +9,6 @@
 
 [file_servers]
 192.168.64.10
+
+[workstations]
+192.168.64.8

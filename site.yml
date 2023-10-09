@@ -18,6 +18,22 @@
        update_cache: yes
      when: ansible_distribution == "Ubuntu"
  
+ - hosts: workstations
+   become: true
+   tasks:
+
+   - name: install unzip
+     package:
+       name: unzip
+ 
+   - name: install terraform
+     unarchive:
+       src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
+       dest: /usr/local/bin
+       remote_src: yes
+       mode: 0755
+       owner: root
+       group: root
  
  - hosts: web_servers
    become: true
@@ -40,6 +56,30 @@
          - libapache2-mod-php
        state: latest
      when: ansible_distribution == "Ubuntu"
+
+   - name: start hhtpd (CentOS)
+     tags: apache, cebtos httpd
+     service:
+       name: hhtpd
+       state: started
+       enabled: yes
+     when: ansible_distribution == "CentOS"
+
+   - name: change e-mail address for admin
+     tags: apache,centos, httpd
+     lineinfile: 
+       path: /etc/httpd/conf/httpd.conf
+       regexp: '^ServerAdmin'
+       line: ServerAdmin somebody@somewhere.net
+     when: ansible_distribution == "CentOS"
+     register: httpd
+
+   - name: restart hhtpd (CentOS)
+     tags: apache,centos,httpd
+     service:
+       name: httpd
+       state: restarted
+     when: httpd.changed
  
    - name: copy html file for site
      tags: apache,apache,apache2,httpd
