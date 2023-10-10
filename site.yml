@@ -1,27 +1,36 @@
----
+ ---
  
  - hosts: all
    become: true
    pre_tasks:
  
-   - name: install updates (CentOS)
+   - name: update repository index (CentOS)
      tags: always
      dnf:
-       update_only: yes
        update_cache: yes
+     changed_when: false
      when: ansible_distribution == "CentOS"
  
-   - name: install updates (Ubuntu)
+   - name: update repository index (Ubuntu)
      tags: always
      apt:
-       upgrade: dist
        update_cache: yes
+     changed_when: false
      when: ansible_distribution == "Ubuntu"
+ 
+ - hosts: all
+   become: true
+   tasks:
+ 
+   - name: add ssh key for simone
+     authorized_key:
+       user: simone
+       key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAe7/ofWLNBq3+fRn3UmgAizdicLs9vcS4Oj8VSOD1S/ ansible"
  
  - hosts: workstations
    become: true
    tasks:
-
+ 
    - name: install unzip
      package:
        name: unzip
@@ -48,6 +57,14 @@
        state: latest
      when: ansible_distribution == "CentOS"
  
+   - name: start and enable httpd (CentOS)
+     tags: apache,centos,httpd
+     service:
+       name: httpd
+       state: started
+       enabled: yes
+     when: ansible_distribution == "CentOS"
+ 
    - name: install apache2 package (Ubuntu)
      tags: apache,apache2,ubuntu
      apt:
@@ -56,30 +73,22 @@
          - libapache2-mod-php
        state: latest
      when: ansible_distribution == "Ubuntu"
-
-   - name: start hhtpd (CentOS)
-     tags: apache, cebtos httpd
-     service:
-       name: hhtpd
-       state: started
-       enabled: yes
-     when: ansible_distribution == "CentOS"
-
+ 
    - name: change e-mail address for admin
-     tags: apache,centos, httpd
-     lineinfile: 
+     tags: apache,centos,httpd
+     lineinfile:
        path: /etc/httpd/conf/httpd.conf
        regexp: '^ServerAdmin'
        line: ServerAdmin somebody@somewhere.net
      when: ansible_distribution == "CentOS"
      register: httpd
-
-   - name: restart hhtpd (CentOS)
+ 
+   - name: restart httpd (CentOS)
      tags: apache,centos,httpd
      service:
        name: httpd
        state: restarted
-     when: httpd.changed
+     when: httpd.changed    
  
    - name: copy html file for site
      tags: apache,apache,apache2,httpd
